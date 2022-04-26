@@ -1,83 +1,103 @@
 version: '3'
 services:
-    mongo1:
-        image: mongo
-        restart: always
-        container_name: mongo1
-        environment:
-          - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
-          - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
-          - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
-          - MONGODB_USER=${MONGODB_USER}
-          - MONGODB_PASS=${MONGODB_PASS}
-        volumes:
-          - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
-          - mongo1:/data/db
-          - ./file.key:/data/file.key
+  mongo1:
+    image: mongo
+    restart: always
+    container_name: mongo1
+    hostname: mongo1.arcletix.com
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASS=${MONGODB_PASS}
+    volumes:
+      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+      - mongo1:/data/db
+      - "./key.txt:/data/key.txt"
+    entrypoint:
+        - bash
+        - -c
+        - |
+            chmod 400 /data/key.txt
+            chown 999:999 /data/key.txt
+            exec docker-entrypoint.sh $$@
+    command: mongod --keyFile /data/key.txt --replSet docker-rs  --bind_ip_all --port 9042
+    ports:
+      - '9042:9042'
+    networks:
+      - dbcluster
+  mongo2:
+    image: mongo
+    container_name: mongo2
+    restart: always
+    hostname:  mongo1.arcletix.com
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASS=${MONGODB_PASS}
+    volumes:
+      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+      - mongo2:/data/db
+      - "./key.txt:/data/key.txt"
+    entrypoint:
+        - bash
+        - -c
+        - |
+            chmod 400 /data/key.txt
+            chown 999:999 /data/key.txt
+            exec docker-entrypoint.sh $$@
+    command: mongod --keyFile /data/key.txt --replSet docker-rs  --bind_ip_all  --port 9142
+    ports:
+      - '9142:9142'
+    networks:
+      - dbcluster
+  mongo3:
+    image: mongo
+    restart: always
+    container_name: mongo3
+    hostname:  mongo1.arcletix.com
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASS=${MONGODB_PASS}
+    volumes:
+      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+      - mongo3:/data/db
+      - "./key.txt:/data/key.txt"
+    entrypoint:
+      - bash
+      - -c
+      - |
+          chmod 400 /data/key.txt
+          chown 999:999 /data/key.txt
+          exec docker-entrypoint.sh $$@
+    command: mongod --keyFile /data/key.txt --replSet docker-rs --bind_ip_all  --port 9242   
+    ports:
+      - '9242:9242'
+    networks:
+      - dbcluster
 
-        command: mongod --keyFile /data/file.key --replSet docker-rs --port 9042
-        ports:
-          - '9042:9042'
-        networks:
-         - dbcluster
-    mongo2:
-        image: mongo
-        restart: always
-        container_name: mongo2 
-        environment:
-          - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
-          - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
-          - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
-          - MONGODB_USER=${MONGODB_USER}
-          - MONGODB_PASS=${MONGODB_PASS}
-        volumes:
-          - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
-          - mongo2:/data/db
-          - "./file.key:/data/file.key"
-
-        command: mongod --keyFile /data/file.key --replSet docker-rs --port 9142
-        ports:
-          - '9142:9142'
-        networks:
-         - dbcluster
-      
-    mongo3:
-        image: mongo
-        restart: always
-        container_name: mongo3
-        environment:
-          - MONGO_INITDB_DATABASE=${MONGODB_DATABASE}
-          - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
-          - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASS}
-          - MONGODB_USER=${MONGODB_USER}
-          - MONGODB_PASS=${MONGODB_PASS}
-        volumes:
-          - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
-          - mongo3:/data/db
-          - "./file.key:/data/file.key"
-
-        command: mongod --keyFile /data/file.key --replSet docker-rs --port 9242
-        ports:
-          - '9242:9242'
-        networks:
-         - dbcluster
-
-    mental-training-redis:
-        container_name: mt-redis
-        image: redis:latest
-        environment:
-          - REDIS_PASSWORD=${REDIS_PASSWORD}  
-        restart: always
-        volumes:
-          - redis-data:/data
-        expose:
-          - 6379
-        ports:
-          - "${REDIS_PORT}:6379"
+  mental-training-redis:
+    container_name: mt-redis
+    image: redis:latest
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    restart: always
+    volumes:
+      - redis-data:/data
+    expose:
+      - 6379
+    ports:
+      - "${REDIS_PORT}:6379"
 volumes:
-    mongo1:
-    mongo2:
-    mongo3:
-    redis-data:
+  mongo1:
+  mongo2:
+  mongo3:
+  redis-data:
 networks:
   dbcluster:
